@@ -189,13 +189,13 @@
          (compression (getf options-plist :compression ))
          (table-header (read-object stream))
          (column-count (vellum.header:column-count table-header))
-         (columns (make-array column-count))
-         (input-stream (if compression
-                           (chipz:make-decompressing-stream (symbol-to-decompressor compression)
-                                                            stream)
-                           stream)))
+         (columns (make-array column-count)))
     (iterate
       (for i from 0 below column-count)
+      (for input-stream = (if compression
+                              (chipz:make-decompressing-stream (symbol-to-decompressor compression)
+                                                               stream)
+                              stream))
       (setf (aref columns i) (read-column input-stream table-header i)))
     (make 'vellum.table:standard-table
           :header table-header
@@ -217,18 +217,21 @@
   (write-file-header stream)
   (bind ((compression (getf options :compression))
          (table-header (vellum.table:header table))
-         (column-count (vellum.header:column-count table-header))
-         (output-stream (if compression
-                           (salza2:make-compressing-stream (symbol-to-compressor compression)
-                                                           stream)
-                           stream)))
+         (column-count (vellum.header:column-count table-header)))
     (write-object options stream)
     (write-object (vellum.table:header table) stream)
     (iterate
       (for i from 0 below column-count)
-      (write-column (vellum.table:column-at table i) output-stream table-header i))
-    (unless (eq stream output-stream)
-      (close output-stream))
+      (for output-stream = (if compression
+                               (salza2:make-compressing-stream (symbol-to-compressor compression)
+                                                               stream)
+                               stream))
+      (write-column (vellum.table:column-at table i)
+                    output-stream
+                    table-header
+                    i)
+      (unless (eq stream output-stream)
+        (close output-stream)))
     table))
 
 
