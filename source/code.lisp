@@ -97,27 +97,33 @@
 
 (defun restore-column (column-type column stream)
   (let ((elements-callback (read-elements-callback column-type)))
+    (ensure-function elements-callback)
     (cl-ds.common.rrb:sparse-rrb-tree-map
      (cl-ds.dicts.srrb:access-tree column)
      (cl-ds.dicts.srrb:access-shift column)
-     #'identity
-     (lambda (node)
-       (iterate
-         (with content = (cl-ds.common.rrb:sparse-rrb-node-content node))
-         (for i from 0 below (cl-ds.common.rrb:sparse-rrb-node-size node))
-         (setf (aref content i) (funcall elements-callback stream))))))
+     :leaf-function (lambda (node)
+                      (iterate
+                        (declare (type fixnum i)
+                                 (optimize (speed 3) (safety 0)))
+                        (with content = (cl-ds.common.rrb:sparse-rrb-node-content node))
+                        (for i from 0 below (cl-ds.common.rrb:sparse-rrb-node-size node))
+                        (setf (aref content i) (funcall elements-callback stream))))))
   column)
 
 
 (defun restore-bitmasks (column stream shift nodes-count)
+  (declare (type fixnum nodes-count shift)
+           (optimize (speed 3)))
   (let ((tag (cl-ds.common.abstract:read-ownership-tag column))
         (type (cl-ds.dicts.srrb:read-element-type column))
         (i 0))
+    (declare (type fixnum i))
     (setf (cl-ds.dicts.srrb:access-tree column) (cl-ds.common.rrb:make-sparse-rrb-node
                                                  :ownership-tag tag))
     (cl-ds.common.rrb:sparse-rrb-tree-map
      (cl-ds.dicts.srrb:access-tree column)
      shift
+     :tree-function
      (lambda (node)
        (incf i)
        (let* ((bitmask (nibbles:read-ub32/be stream)))
@@ -128,6 +134,7 @@
                                                                             :ownership-tag tag)))))
        (when (> i nodes-count)
          (return-from restore-bitmasks nil)))
+     :leaf-function
      (lambda (node)
        (incf i)
        (let* ((bitmask (nibbles:read-ub32/be stream)))
@@ -140,14 +147,17 @@
 
 (defun dump-column (column-type column stream)
   (let ((callback (write-elements-callback column-type)))
-    (cl-ds.common.rrb:sparse-rrb-tree-map (cl-ds.dicts.srrb:access-tree column)
-                                          (cl-ds.dicts.srrb:access-shift column)
-                                          #'identity
-                                          (lambda (leaf)
-                                            (iterate
-                                              (with content = (cl-ds.common.rrb:sparse-rrb-node-content leaf))
-                                              (for i from 0 below (cl-ds.common.rrb:sparse-rrb-node-size leaf))
-                                              (funcall callback (aref content i) stream)))))
+    (ensure-function callback)
+    (cl-ds.common.rrb:sparse-rrb-tree-map
+     (cl-ds.dicts.srrb:access-tree column)
+     (cl-ds.dicts.srrb:access-shift column)
+     :leaf-function (lambda (leaf)
+                      (iterate
+                        (declare (optimize (speed 3) (safety 0))
+                                 (type fixnum i))
+                        (with content = (cl-ds.common.rrb:sparse-rrb-node-content leaf))
+                        (for i from 0 below (cl-ds.common.rrb:sparse-rrb-node-size leaf))
+                        (funcall callback (aref content i) stream)))))
   column)
 
 
@@ -156,7 +166,7 @@
            (incf result)))
     (cl-ds.common.rrb:sparse-rrb-tree-map (cl-ds.dicts.srrb:access-tree column)
                                           (cl-ds.dicts.srrb:access-shift column)
-                                          #'impl #'impl)
+                                          :leaf-function #'impl :tree-function #'impl)
     result))
 
 
@@ -166,7 +176,7 @@
                                   stream)))
     (cl-ds.common.rrb:sparse-rrb-tree-map (cl-ds.dicts.srrb:access-tree column)
                                           (cl-ds.dicts.srrb:access-shift column)
-                                          #'impl #'impl))
+                                          :leaf-function #'impl :tree-function #'impl))
   column)
 
 
