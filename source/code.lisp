@@ -55,6 +55,12 @@
 (defgeneric write-elements-callback (column-type))
 
 
+(declaim (inline mask-signed))
+(defun mask-signed (x size)
+  (declare (type fixnum x) (type (unsigned-byte 8) size))
+  (logior x (- (mask-field (byte 1 (1- size)) x))))
+
+
 (defmethod read-elements-callback (column-type)
   (cond ((subtypep column-type '(unsigned-byte 8))
          (lambda (stream) (read-byte stream)))
@@ -65,7 +71,7 @@
         ((subtypep column-type '(unsigned-byte 64))
          (lambda (stream) (nibbles:read-ub64/be stream)))
         ((subtypep column-type '(signed-byte 8))
-         (lambda (stream) (read-byte stream)))
+         (lambda (stream) (mask-signed (read-byte stream) 8)))
         ((subtypep column-type '(signed-byte 16))
          (lambda (stream) (nibbles:read-sb16/be stream)))
         ((subtypep column-type '(signed-byte 32))
@@ -85,7 +91,7 @@
         ((subtypep column-type '(unsigned-byte 64))
          (lambda (object stream) (nibbles:write-ub64/be object stream)))
         ((subtypep column-type '(signed-byte 8))
-         (lambda (object stream) (write-byte object stream)))
+         (lambda (object stream) (write-byte (logand #b11111111 object) stream)))
         ((subtypep column-type '(signed-byte 16))
          (lambda (object stream) (nibbles:write-sb16/be object stream)))
         ((subtypep column-type '(signed-byte 32))
