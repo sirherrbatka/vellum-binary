@@ -78,6 +78,12 @@
          (lambda (stream) (nibbles:read-sb32/be stream)))
         ((subtypep column-type '(signed-byte 64))
          (lambda (stream) (nibbles:read-sb64/be stream)))
+        ((subtypep column-type 'short-float)
+         (lambda (stream) (coerce (nibbles:read-ieee-single/be stream) 'short-float)))
+        ((subtypep column-type 'single-float)
+         (lambda (stream) (nibbles:read-ieee-single/be stream)))
+        ((subtypep column-type 'double-float)
+         (lambda (stream) (nibbles:read-ieee-single/be stream)))
         (t (lambda (stream) (read-object stream)))))
 
 
@@ -98,6 +104,12 @@
          (lambda (object stream) (nibbles:write-sb32/be object stream)))
         ((subtypep column-type '(signed-byte 64))
          (lambda (object stream) (nibbles:write-sb64/be object stream)))
+        ((subtypep column-type 'short-float)
+         (lambda (object stream) (nibbles:write-ieee-single/be (coerce object 'single-float) stream)))
+        ((subtypep column-type 'single-float)
+         (lambda (object stream) (nibbles:write-ieee-single/be object stream)))
+        ((subtypep column-type 'double-float)
+         (lambda (object stream) (nibbles:write-ieee-single/be object stream)))
         (t (lambda (object stream) (write-object object stream)))))
 
 
@@ -107,22 +119,6 @@
 
 (defmethod write-elements-callback ((column-type (eql 'fixnum)))
   (lambda (object stream) (nibbles:write-sb64/be object stream)))
-
-
-(defmethod read-elements-callback ((column-type (eql 'single-float)))
-  (lambda (stream) (nibbles:read-ieee-single/le stream)))
-
-
-(defmethod write-elements-callback ((column-type (eql 'single-float)))
-  (lambda (object stream) (nibbles:write-ieee-single/be object stream)))
-
-
-(defmethod write-elements-callback ((column-type (eql 'double-float)))
-  (lambda (object stream) (nibbles:write-ieee-double/be object stream)))
-
-
-(defmethod read-elements-callback ((column-type (eql 'double-float)))
-  (lambda (stream) (nibbles:read-ieee-double/be stream)))
 
 
 (defmethod write-elements-callback ((column-type (eql 'boolean)))
@@ -142,7 +138,7 @@
      :leaf-function (lambda (node)
                       (iterate
                         (declare (type fixnum i)
-                                 (optimize (speed 3) (safety 0)))
+                                 (optimize (speed 3)))
                         (with content = (cl-ds.common.rrb:sparse-rrb-node-content node))
                         (for i from 0 below (cl-ds.common.rrb:sparse-rrb-node-size node))
                         (setf (aref content i) (funcall elements-callback stream))))))
@@ -191,7 +187,7 @@
      (cl-ds.dicts.srrb:access-shift column)
      :leaf-function (lambda (leaf)
                       (iterate
-                        (declare (optimize (speed 3) (safety 0))
+                        (declare (optimize (speed 3))
                                  (type fixnum i))
                         (with content = (cl-ds.common.rrb:sparse-rrb-node-content leaf))
                         (for i from 0 below (cl-ds.common.rrb:sparse-rrb-node-size leaf))
