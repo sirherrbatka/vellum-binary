@@ -6,10 +6,10 @@ Uses cl-conspack, chipz, salza2.
 Example
 
 ```
-(vellum:copy-to :binary "~/path.bin" *dataframe* :compression :zlib)
-(vellum:copy-to :binary "~/path.bin" *dataframe* :compression :gzip)
-(vellum:copy-to :binary "~/path.bin" *dataframe*)
-(defparameter *dataframe* (vellum:copy-from :binary "~/path.bin"))
+(vellum:copy-to :binary "~/path.vel" *dataframe* :compression :zlib)
+(vellum:copy-to :binary "~/path.vel" *dataframe* :compression :gzip)
+(vellum:copy-to :binary "~/path.vel" *dataframe*)
+(defparameter *dataframe* (vellum:copy-from :binary "~/path.vel"))
 ```
 
 Instead of file path you can also pass octet output-stream.
