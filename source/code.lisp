@@ -293,8 +293,7 @@
                     output-stream
                     table-header
                     i))
-    (unless (eq stream output-stream)
-      (close output-stream))
+    (finish-output output-stream)
     table))
 
 
