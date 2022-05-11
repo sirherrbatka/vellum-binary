@@ -32,16 +32,41 @@
   )
 
 
-(defun symbol-to-compressor (symbol)
-  (eswitch (symbol)
-    (:zlib 'salza2:zlib-compressor)
-    (:gzip 'salza2:gzip-compressor)))
+(defgeneric make-decompressing-stream (symbol input-stream))
+(defgeneric make-compressing-stream (symbol output-stream))
 
 
-(defun symbol-to-decompressor (symbol)
-  (eswitch (symbol)
-    (:zlib :zlib)
-    (:gzip :gzip)))
+(defmethod make-compressing-stream ((symbol (eql nil))
+                                    output-stream)
+  output-stream)
+
+
+(defmethod make-compressing-stream ((symbol (eql :zlib))
+                                    output-stream)
+  (salza2:make-compressing-stream 'salza2:zlib-compressor
+                                  output-stream))
+
+
+(defmethod make-compressing-stream ((symbol (eql :gzip))
+                                    output-stream)
+  (salza2:make-compressing-stream 'salza2:gzip-compressor
+                                  output-stream))
+
+
+(defmethod make-decompressing-stream ((symbol (eql nil))
+                                      input-stream)
+  input-stream)
+
+
+(defmethod make-decompressing-stream ((symbol (eql :zlib))
+                                      input-stream)
+  (chipz:make-decompressing-stream :zlib input-stream))
+
+
+(defmethod make-decompressing-stream ((symbol (eql :gzip))
+                                      input-stream)
+  (chipz:make-decompressing-stream :gzip input-stream))
+
 
 (defun read-object (stream)
   (conspack:decode-stream stream))
@@ -234,10 +259,7 @@
          (table-header (read-object stream))
          (column-count (vellum.header:column-count table-header))
          (columns (make-array column-count))
-         (input-stream (if compression
-                           (chipz:make-decompressing-stream (symbol-to-decompressor compression)
-                                                            stream)
-                           stream)))
+         (input-stream (make-decompressing-stream compression stream)))
     (iterate
       (for i from 0 below column-count)
       (setf (aref columns i) (read-column input-stream table-header i)))
@@ -262,10 +284,7 @@
   (bind ((compression (getf options :compression))
          (table-header (vellum.table:header table))
          (column-count (vellum.header:column-count table-header))
-         (output-stream (if compression
-                            (salza2:make-compressing-stream (symbol-to-compressor compression)
-                                                            stream)
-                            stream)))
+         (output-stream (make-compressing-stream compression stream)))
     (write-object options stream)
     (write-object (vellum.table:header table) stream)
     (iterate
