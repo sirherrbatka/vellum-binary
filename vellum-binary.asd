@@ -4,7 +4,7 @@
   :version "1.0.0"
   :license "BSD simplified"
   :author "Marek Kochanowicz"
-  :depends-on ((:version #:vellum ((>= "1.2.0")))
+  :depends-on ((:version #:vellum ((>= "1.3.0")))
                #:chipz
                #:salza2
                #:nibbles
