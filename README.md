@@ -12,6 +12,8 @@ Example
 (defparameter *dataframe* (vellum:copy-from :binary "~/path.bin"))
 ```
 
+Instead of file path you can also pass octet output-stream.
+
 Provides WRITE-ELEMENTS-CALLBACK and READ-ELEMENTS-CALLBACK generic functions for programmer to implement custom serialization and deserialization for objects of a given type to streams. Type is taken from column-type. Implements handling for boolean, fixnum, single-float, double-float. Everything else is handled by cl-conspack library.
 
 In addition to the built-in chipz/salza2 compression you can use compression algorithms of your choosing by specializing make-compressing-stream and make-decompressing-stream generic functions.
