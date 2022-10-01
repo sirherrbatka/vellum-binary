@@ -298,8 +298,9 @@
                     table-header
                     i))
     (finish-output output-stream)
+    (unless (eq stream output-stream)
+      (close output-stream))
     table))
-
 
 (defmethod conspack:encode-object ((object vellum.header:column-signature) &key &allow-other-keys)
   (conspack:slots-to-alist (object) vellum.header::type vellum.header::name))
