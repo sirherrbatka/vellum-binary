@@ -109,6 +109,8 @@
          (lambda (stream) (nibbles:read-ieee-single/be stream)))
         ((subtypep column-type 'double-float)
          (lambda (stream) (nibbles:read-ieee-single/be stream)))
+        ((eql column-type 'boolean)
+         (lambda (stream) (= (read-byte stream) 1)))
         (t (lambda (stream) (read-object stream)))))
 
 
@@ -135,6 +137,8 @@
          (lambda (object stream) (nibbles:write-ieee-single/be object stream)))
         ((subtypep column-type 'double-float)
          (lambda (object stream) (nibbles:write-ieee-single/be object stream)))
+        ((eql column-type 'boolean)
+         (lambda (object stream) (write-byte (if object 1 0) stream)))
         (t (lambda (object stream) (write-object object stream)))))
 
 
