@@ -302,25 +302,13 @@
       (close output-stream))
     table))
 
-(defmethod conspack:encode-object ((object vellum.header:column-signature) &key &allow-other-keys)
-  (conspack:slots-to-alist (object) vellum.header::type vellum.header::name))
+
+(conspack:defencoding vellum.header:column-signature
+  vellum.header::type vellum.header::name)
 
 
-(defmethod conspack:decode-object ((object (eql 'vellum.header:column-signature))
-                                   alist
-                                   &key &allow-other-keys)
-  (conspack:alist-to-slots (alist :class vellum.header:column-signature) vellum.header::type vellum.header::name))
-
-
-(defmethod conspack:encode-object ((object vellum.header:standard-header) &key &allow-other-keys)
-  (conspack:slots-to-alist (object) vellum.header::column-signatures vellum.header::column-names))
-
-
-(defmethod conspack:decode-object ((object (eql 'vellum.header:standard-header))
-                                   alist
-                                   &key &allow-other-keys)
-  (conspack:alist-to-slots (alist :class vellum.header:standard-header)
-    vellum.header::column-signatures vellum.header::column-names))
+(conspack:defencoding vellum.header:standard-header
+  vellum.header::column-signatures vellum.header::column-names)
 
 
 (defmethod vellum:copy-to ((format (eql :binary))
