@@ -76,7 +76,7 @@
   most-positive-fixnum)
 
 
-(define-symbol-macro string-header-size-bytes (byte 3 0))
+(define-symbol-macro string-header-size-bytes (byte 7 0))
 (define-symbol-macro string-header-max-bit (byte 1 7))
 
 
