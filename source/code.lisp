@@ -80,14 +80,14 @@
 (define-symbol-macro string-header-max-bit (byte 1 7))
 
 
-(defun decode-string (stream)
+(defun decode-string (stream octets)
   (declare (optimize (speed 3) (safety 0)))
-  (let* ((octets (make-array 256 :fill-pointer 0 :adjustable t :element-type '(unsigned-byte 8))))
-    (iterate
-      (for byte = (read-byte stream))
-      (until (zerop byte))
-      (vector-push-extend byte octets))
-    (trivial-utf-8:utf-8-bytes-to-string octets)))
+  (setf (fill-pointer octets) 0)
+  (iterate
+    (for byte = (read-byte stream))
+    (until (zerop byte))
+    (vector-push-extend byte octets))
+  (trivial-utf-8:utf-8-bytes-to-string octets))
 
 
 (defun encode-string (string stream)
@@ -138,7 +138,8 @@
         ((subtypep column-type 'double-float)
          (lambda (stream) (nibbles:read-ieee-single/be stream)))
         ((eql column-type 'string)
-         #'decode-string)
+         (let* ((octets (make-array 256 :fill-pointer 0 :adjustable t :element-type '(unsigned-byte 8))))
+           (lambda (stream) (decode-string stream octets))))
         ((eql column-type 'boolean)
          (lambda (stream) (= (read-byte stream) 1)))
         (t (lambda (stream) (read-object stream)))))
