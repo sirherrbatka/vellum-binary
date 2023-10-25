@@ -73,8 +73,7 @@
 
 
 (define-constant +max-string-length+
-  (logior (ash #b1111 (* 8 #b111))
-          (ldb (byte (* 8 #b111) 0) most-positive-fixnum)))
+  most-positive-fixnum)
 
 
 (define-symbol-macro string-header-size-bytes (byte 3 0))
