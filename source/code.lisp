@@ -1,7 +1,7 @@
 (cl:in-package #:vellum-binary)
 
 
-(define-constant +version+ 0)
+(define-constant +version+ 1)
 
 
 (defun read-file-header (stream)
@@ -72,6 +72,77 @@
   (conspack:decode-stream stream))
 
 
+(define-constant +max-string-length+
+  (logior (ash #b1111 (* 8 #b111))
+          (ldb (byte (* 8 #b111) 0) most-positive-fixnum)))
+
+
+(define-symbol-macro string-header-size-bytes (byte 3 0))
+(define-symbol-macro string-header-max-bit (byte 1 7))
+
+
+(-> make-string-buffer (stream) (simple-array (unsigned-byte 8) *))
+(declaim (inline make-string-buffer))
+(defun make-string-buffer (stream)
+  (declare (optimize (speed 3) (safety 0)))
+  (let* ((header (read-byte stream))
+         (max-bit (ldb string-header-max-bit header))
+         (size-bytes (if (zerop max-bit) 0 (ldb string-header-size-bytes header))))
+    (if (zerop max-bit)
+        (make-array header :element-type '(unsigned-byte 8))
+        (let ((size 0))
+          (declare (type (unsigned-byte 64) size)
+                   (type (simple-array )))
+          (iterate
+            (declare (type fixnum i)
+                     (type (unsigned-byte 8) byte))
+            (for i from 0 below size-bytes)
+            (setf size (ash size 8))
+            (for byte = (read-byte stream))
+            (setf (ldb (byte 8 0) size) byte))
+          (make-array size :element-type '(unsigned-byte 8))))))
+
+
+(defun decode-string (stream)
+  (declare (optimize (speed 3) (safety 0)))
+  (let* ((octets (make-string-buffer stream)))
+    (iterate
+      (declare (type fixnum i))
+      (for i from 0 below (length octets))
+      (setf (aref octets i) (read-byte stream)))
+    (trivial-utf-8:utf-8-bytes-to-string octets)))
+
+
+(defun split-string-size (size)
+  (let* ((size-length (integer-length size))
+         (size-bytes (ceiling size-length 8)))
+    size-bytes))
+
+
+(declaim (inline encode-string-size))
+(defun encode-string-size (stream size)
+  (if (<= size 127)
+      (write-byte size stream)
+      (bind ((size-bytes (split-string-size size))
+             (header (dpb 1 string-header-max-bit size-bytes)))
+        (write-byte header stream)
+        (unless (zerop size-bytes)
+          (iterate
+            (for i from (1- size-bytes) downto 0)
+            (write-byte (ldb (byte 8 (* i 8)) size) stream))))))
+
+
+(defun encode-string (string stream)
+  (let* ((octets (trivial-utf-8:string-to-utf-8-bytes string))
+         (size (length octets)))
+    (assert (<= size +max-string-length+))
+    (encode-string-size stream size)
+    (iterate
+      (for i from 0 below size)
+      (for byte = (aref octets i))
+      (write-byte byte stream))))
+
+
 (defun write-object (object stream)
   (conspack:encode object :stream stream))
 
@@ -109,6 +180,8 @@
          (lambda (stream) (nibbles:read-ieee-single/be stream)))
         ((subtypep column-type 'double-float)
          (lambda (stream) (nibbles:read-ieee-single/be stream)))
+        ((eql column-type 'string)
+         #'decode-string)
         ((eql column-type 'boolean)
          (lambda (stream) (= (read-byte stream) 1)))
         (t (lambda (stream) (read-object stream)))))
@@ -139,6 +212,8 @@
          (lambda (object stream) (nibbles:write-ieee-single/be object stream)))
         ((eql column-type 'boolean)
          (lambda (object stream) (write-byte (if object 1 0) stream)))
+        ((eql column-type 'string)
+         #'encode-string)
         (t (lambda (object stream) (write-object object stream)))))
 
 
