@@ -72,14 +72,6 @@
   (conspack:decode-stream stream))
 
 
-(define-constant +max-string-length+
-  most-positive-fixnum)
-
-
-(define-symbol-macro string-header-size-bytes (byte 7 0))
-(define-symbol-macro string-header-max-bit (byte 1 7))
-
-
 (defun decode-string (stream octets)
   (declare (optimize (speed 3) (safety 0)))
   (setf (fill-pointer octets) 0)
