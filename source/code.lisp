@@ -1,7 +1,7 @@
 (cl:in-package #:vellum-binary)
 
 
-(define-constant +version+ 1)
+(define-constant +version+ 2)
 
 
 (defun read-file-header (stream)
