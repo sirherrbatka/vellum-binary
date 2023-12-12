@@ -314,23 +314,25 @@
 
 
 (defun write-stream (table stream options)
-  (write-file-header stream)
-  (bind ((compression (getf options :compression))
-         (table-header (vellum.table:header table))
-         (column-count (vellum.header:column-count table-header))
-         (output-stream (make-compressing-stream compression stream)))
-    (write-object options stream)
-    (write-object (vellum.table:header table) stream)
-    (iterate
-      (for i from 0 below column-count)
-      (write-column (vellum.table:column-at table i)
-                    output-stream
-                    table-header
-                    i))
-    (finish-output output-stream)
-    (unless (eq stream output-stream)
-      (close output-stream))
-    table))
+  (conspack:with-properties ()
+    (conspack:tracking-refs ()
+      (write-file-header stream)
+      (bind ((compression (getf options :compression))
+             (table-header (vellum.table:header table))
+             (column-count (vellum.header:column-count table-header))
+             (output-stream (make-compressing-stream compression stream)))
+        (write-object options stream)
+        (write-object (vellum.table:header table) stream)
+        (iterate
+          (for i from 0 below column-count)
+          (write-column (vellum.table:column-at table i)
+                        output-stream
+                        table-header
+                        i))
+        (finish-output output-stream)
+        (unless (eq stream output-stream)
+          (close output-stream))
+        table))))
 
 
 (conspack:defencoding vellum.header:column-signature
