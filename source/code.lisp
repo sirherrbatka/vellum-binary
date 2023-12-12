@@ -285,19 +285,21 @@
 
 
 (defun read-stream (stream)
-  (read-file-header stream)
-  (bind ((options-plist (read-object stream))
-         (compression (getf options-plist :compression ))
-         (table-header (read-object stream))
-         (column-count (vellum.header:column-count table-header))
-         (columns (make-array column-count))
-         (input-stream (make-decompressing-stream compression stream)))
-    (iterate
-      (for i from 0 below column-count)
-      (setf (aref columns i) (read-column input-stream table-header i)))
-    (make 'vellum.table:standard-table
-          :header table-header
-          :columns columns)))
+  (conspack:with-properties ()
+    (conspack:tracking-refs ()
+      (read-file-header stream)
+      (bind ((options-plist (read-object stream))
+             (compression (getf options-plist :compression ))
+             (table-header (read-object stream))
+             (column-count (vellum.header:column-count table-header))
+             (columns (make-array column-count))
+             (input-stream (make-decompressing-stream compression stream)))
+        (iterate
+          (for i from 0 below column-count)
+          (setf (aref columns i) (read-column input-stream table-header i)))
+        (make 'vellum.table:standard-table
+              :header table-header
+              :columns columns)))))
 
 
 (defun write-column (column stream header index)
