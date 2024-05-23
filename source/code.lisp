@@ -89,8 +89,7 @@
       (for i from 0 below size)
       (for byte = (aref octets i))
       (unless (zerop byte)
-        (error "NULL in string is not allowed!"))
-      (write-byte byte stream))
+        (write-byte byte stream)))
     (write-byte 0 stream)))
 
 
