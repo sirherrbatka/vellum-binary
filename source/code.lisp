@@ -357,7 +357,9 @@
                            &rest options
                            &key (compression nil))
   (declare (ignore compression))
-  (with-output-to-file (stream output :element-type '(unsigned-byte 8))
+  (with-open-stream (stream (cl-ds.fs:open-stream-designator output
+                                                             :element-type '(unsigned-byte 8)
+                                                             :direction :output))
     (write-stream input stream options)))
 
 
@@ -375,5 +377,7 @@
                              &key)
 
   (declare (ignore options))
-  (with-input-from-file (stream input :element-type '(unsigned-byte 8))
+  (with-open-stream (stream (cl-ds.fs:open-stream-designator input
+                                                             :element-type '(unsigned-byte 8)
+                                                             :direction :input))
     (read-stream stream)))
