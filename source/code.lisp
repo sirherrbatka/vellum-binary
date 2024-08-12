@@ -331,7 +331,8 @@
         (finish-output output-stream)
         (unless (eq stream output-stream)
           (close output-stream))
-        table))))
+        table)))
+  (finish-output stream))
 
 
 (conspack:defencoding vellum.header:column-signature
